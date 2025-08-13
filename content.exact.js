@@ -1,13 +1,8 @@
-// Token Counter v2.1 - Modern Glass Edition
-// Colors: green (<20%), yellow (<50%), red (<75%), danger red (≥95% with pulse)
-// Auto-budget: "ChatGPT 5" -> 32k, "ChatGPT 5 Thinking" -> 128k
-// Local exact tokenizer via @dqbd/tiktoken
-
 import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
 
-const VERSION = "v2.4.6";
+const VERSION = "v2.5.3";
 
 (async () => {
   // Prevent multiple injections
@@ -225,13 +220,22 @@ const VERSION = "v2.4.6";
   let animationId = 0;
   let currentDisplayValue = 0;
 
+  // Format token display based on mode
+  const formatTokenDisplay = (value) => {
+    if (widget.classList.contains("tc-compact") && value >= 10000) {
+      const roundedOneDecimalK = Math.round((value / 1000) * 10) / 10;
+      return `${roundedOneDecimalK.toFixed(1)}k`;
+    }
+    return value.toLocaleString();
+  };
+
   const animateValueTo = (targetValue, immediate = false) => {
     const startValue = currentDisplayValue;
     const difference = targetValue - startValue;
 
     // If change is small or immediate update requested, skip animation
     if (Math.abs(difference) <= 2 || immediate) {
-      elValue.textContent = targetValue.toLocaleString();
+      elValue.textContent = formatTokenDisplay(targetValue);
       currentDisplayValue = targetValue;
       return;
     }
@@ -249,7 +253,7 @@ const VERSION = "v2.4.6";
       const easedProgress = 1 - Math.pow(1 - progress, 3);
       const currentValue = Math.round(startValue + difference * easedProgress);
 
-      elValue.textContent = currentValue.toLocaleString();
+      elValue.textContent = formatTokenDisplay(currentValue);
 
       if (progress < 1) {
         animationId = requestAnimationFrame(animate);
@@ -308,7 +312,13 @@ const VERSION = "v2.4.6";
       updateBottle(tokenCount);
 
       // Update token count size class
-      widget.setAttribute("data-tokens", tokenCount >= 1000 ? "large" : "small");
+      let tokenSizeClass = "small";
+      if (tokenCount >= 100000) {
+        tokenSizeClass = "xlarge";
+      } else if (tokenCount >= 1000) {
+        tokenSizeClass = "large";
+      }
+      widget.setAttribute("data-tokens", tokenSizeClass);
 
       // Show/hide widget based on content
       if (text.trim().length > 0) {
