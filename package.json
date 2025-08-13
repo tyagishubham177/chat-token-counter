@@ -1,0 +1,15 @@
+{
+  "name": "token-counter",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild content.exact.js --bundle --outfile=build/content.js --format=iife --loader:.wasm=binary"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  },
+  "dependencies": {
+    "@dqbd/tiktoken": "^1.0.0"
+  }
+}

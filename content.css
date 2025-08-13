@@ -1,0 +1,278 @@
+/* Token Counter - Modern Glass Design */
+#tc_widget {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed state - elegant floating dot */
+#tc_widget.tc-collapsed {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.12),
+    0 4px 12px rgba(0,0,0,0.08),
+    inset 0 1px 2px rgba(255,255,255,0.8);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#tc_widget.tc-collapsed:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px rgba(0,0,0,0.15),
+    0 6px 16px rgba(0,0,0,0.1),
+    inset 0 1px 2px rgba(255,255,255,0.8);
+}
+
+/* Collapsed state dot indicator */
+#tc_widget.tc-collapsed::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--liq, #10b981);
+  box-shadow: 0 0 12px var(--glow, rgba(16,185,129,0.4));
+  animation: tcPulseIndicator 2s ease-in-out infinite;
+}
+
+@keyframes tcPulseIndicator {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Expanded state - sleek vertical panel */
+#tc_widget.tc-expanded {
+  width: auto;
+  min-width: 100px;
+  height: 280px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, 
+    rgba(255,255,255,0.85) 0%,
+    rgba(255,255,255,0.75) 100%);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 
+    0 20px 60px rgba(0,0,0,0.15),
+    0 8px 24px rgba(0,0,0,0.08),
+    inset 0 1px 2px rgba(255,255,255,0.9),
+    inset 0 -1px 2px rgba(0,0,0,0.05);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+#tc_widget.tc-expanded:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 24px 68px rgba(0,0,0,0.18),
+    0 10px 28px rgba(0,0,0,0.1),
+    inset 0 1px 2px rgba(255,255,255,0.9),
+    inset 0 -1px 2px rgba(0,0,0,0.05);
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  #tc_widget.tc-collapsed {
+    background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.8));
+    border-color: rgba(148,163,184,0.2);
+    box-shadow: 
+      0 8px 32px rgba(0,0,0,0.4),
+      0 4px 12px rgba(0,0,0,0.3),
+      inset 0 1px 2px rgba(255,255,255,0.1);
+  }
+  
+  #tc_widget.tc-expanded {
+    background: linear-gradient(135deg,
+      rgba(30,41,59,0.85) 0%,
+      rgba(15,23,42,0.8) 100%);
+    border-color: rgba(148,163,184,0.15);
+    color: #e2e8f0;
+    box-shadow: 
+      0 20px 60px rgba(0,0,0,0.5),
+      0 8px 24px rgba(0,0,0,0.3),
+      inset 0 1px 2px rgba(255,255,255,0.08),
+      inset 0 -1px 2px rgba(0,0,0,0.3);
+  }
+}
+
+/* Inner content layout */
+#tc_inner {
+  display: none;
+  padding: 16px;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#tc_widget.tc-expanded #tc_inner {
+  display: flex;
+}
+
+#tc_main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Bottle container */
+#tc_bottle {
+  width: 48px;
+  height: 160px;
+  position: relative;
+  filter: drop-shadow(0 0 16px var(--glow, rgba(16,185,129,0.3)));
+  transition: filter 0.4s ease;
+}
+
+#tc_bottle svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Token count display */
+#tc_value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  line-height: 1.2;
+  color: #1f2937;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+  transition: all 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  #tc_value {
+    color: #f8fafc;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+}
+
+/* Version info */
+#tc_ver {
+  font-size: 10px;
+  opacity: 0.6;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+/* Visibility control */
+#tc_widget:not(.tc-show) {
+  display: none;
+}
+
+/* Color scheme variables */
+#tc_widget {
+  --liq: #10b981;
+  --glow: rgba(16,185,129,0.3);
+  --liq-secondary: rgba(16,185,129,0.1);
+}
+
+#tc_widget.tc-mid {
+  --liq: #f59e0b;
+  --glow: rgba(245,158,11,0.3);
+  --liq-secondary: rgba(245,158,11,0.1);
+}
+
+#tc_widget.tc-high {
+  --liq: #ef4444;
+  --glow: rgba(239,68,68,0.3);
+  --liq-secondary: rgba(239,68,68,0.1);
+}
+
+#tc_widget.tc-danger {
+  --liq: #dc2626;
+  --glow: rgba(220,38,38,0.4);
+  --liq-secondary: rgba(220,38,38,0.15);
+}
+
+/* Liquid fill animation */
+#tc_liquid {
+  fill: var(--liq);
+  transition: y 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+              fill 0.3s ease;
+}
+
+/* Danger state pulse animation */
+#tc_widget.tc-danger #tc_liquid {
+  animation: tcDangerPulse 1.5s ease-in-out infinite;
+}
+
+#tc_widget.tc-danger #tc_bottle {
+  animation: tcBottleShake 2s ease-in-out infinite;
+}
+
+@keyframes tcDangerPulse {
+  0%, 100% { 
+    opacity: 0.9; 
+    filter: brightness(1);
+  }
+  50% { 
+    opacity: 1; 
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes tcBottleShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-0.5px); }
+  75% { transform: translateX(0.5px); }
+}
+
+/* Glass highlight effect */
+#tc_gloss {
+  fill: url(#tc_gloss_grad);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Bottle outline improvements */
+#tc_bottle path {
+  stroke: currentColor;
+  stroke-opacity: 0.3;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  #tc_bottle path {
+    stroke-opacity: 0.4;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #tc_widget {
+    right: 12px;
+    bottom: 12px;
+  }
+  
+  #tc_widget.tc-expanded {
+    width: auto;
+    min-width: 90px;
+    height: 240px;
+  }
+  
+  #tc_bottle {
+    width: 40px;
+    height: 140px;
+  }
+  
+  #tc_value {
+    font-size: 16px;
+  }
+}
