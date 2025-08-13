@@ -82,7 +82,8 @@
 /* Compact state - dot with token count */
 #tc_widget.tc-compact {
   height: 48px;
-  min-width: 80px;
+  min-width: 64px;
+  max-width: 96px;
   border-radius: 24px;
   background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
   border: 1px solid rgba(255,255,255,0.6);
@@ -93,8 +94,8 @@
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  padding: 0;
+  padding-right: 16px;
 }
 
 #tc_widget.tc-compact:hover {
@@ -112,16 +113,30 @@
   border-radius: 50%;
   background: var(--liq, #10b981);
   box-shadow: 0 0 12px var(--glow, rgba(16,185,129,0.4));
+  margin: 0 12px;
+  flex-shrink: 0;
 }
 
 #tc_widget.tc-compact #tc_value {
-  font-size: 16px;
+  font-size: 20px;
   margin: 0;
+  transition: font-size 0.3s ease;
+  line-height: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
 }
 
-#tc_widget.tc-compact #tc_bottle,
-#tc_widget.tc-compact #tc_ver {
-  display: none;
+#tc_widget.tc-compact #tc_main {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+
+#tc_widget.tc-compact[data-tokens="large"] #tc_value {
+  font-size: 15px;
 }
 
 /* Dark mode styles */
@@ -167,7 +182,8 @@
   justify-content: space-between;
 }
 
-#tc_widget.tc-expanded #tc_inner {
+#tc_widget.tc-expanded #tc_inner,
+#tc_widget.tc-compact #tc_inner {
   display: flex;
 }
 

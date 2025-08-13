@@ -7,7 +7,7 @@ import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
 
-const VERSION = "v2.4";
+const VERSION = "v2.4.6";
 
 (async () => {
   // Prevent multiple injections
@@ -306,6 +306,9 @@ const VERSION = "v2.4";
       const isSmallChange = Math.abs(tokenCount - currentDisplayValue) <= 5;
       animateValueTo(tokenCount, isSmallChange);
       updateBottle(tokenCount);
+
+      // Update token count size class
+      widget.setAttribute("data-tokens", tokenCount >= 1000 ? "large" : "small");
 
       // Show/hide widget based on content
       if (text.trim().length > 0) {

@@ -1,7 +1,7 @@
 {
   "name": "Chat Token Counter (v2.4)",
   "description": "Exact token count on chatgpt.com using tiktoken (local).",
-  "version": "2.4.0",
+  "version": "2.4.6",
   "manifest_version": 3,
   "content_scripts": [
     {
