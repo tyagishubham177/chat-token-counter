@@ -7,7 +7,7 @@ import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
 
-const VERSION = "v2.3";
+const VERSION = "v2.4";
 
 (async () => {
   // Prevent multiple injections
@@ -21,9 +21,9 @@ const VERSION = "v2.3";
   // Create the widget with improved SVG design
   const widget = document.createElement("div");
   widget.id = "tc_widget";
-  widget.className = "tc-expanded"; // Start expanded
+  widget.className = "tc-compact"; // Start in compact mode
   widget.setAttribute("role", "button");
-  widget.setAttribute("aria-expanded", "true");
+  widget.setAttribute("aria-expanded", "false");
   widget.setAttribute("aria-label", "Token counter");
 
   widget.innerHTML = `
@@ -329,17 +329,24 @@ const VERSION = "v2.3";
     performUpdate();
   };
 
-  // Toggle functionality with improved UX
-  const expand = () => {
-    widget.classList.remove("tc-collapsed");
-    widget.classList.add("tc-expanded");
-    widget.setAttribute("aria-expanded", "true");
-  };
-
-  const collapse = () => {
-    widget.classList.remove("tc-expanded");
-    widget.classList.add("tc-collapsed");
-    widget.setAttribute("aria-expanded", "false");
+  // Toggle functionality with improved UX for three modes
+  const cycleMode = () => {
+    if (widget.classList.contains("tc-collapsed")) {
+      // Collapsed -> Compact
+      widget.classList.remove("tc-collapsed");
+      widget.classList.add("tc-compact");
+      widget.setAttribute("aria-expanded", "false");
+    } else if (widget.classList.contains("tc-compact")) {
+      // Compact -> Expanded
+      widget.classList.remove("tc-compact");
+      widget.classList.add("tc-expanded");
+      widget.setAttribute("aria-expanded", "true");
+    } else {
+      // Expanded -> Collapsed
+      widget.classList.remove("tc-expanded");
+      widget.classList.add("tc-collapsed");
+      widget.setAttribute("aria-expanded", "false");
+    }
   };
 
   // Click handler with haptic feedback (if supported)
@@ -351,11 +358,7 @@ const VERSION = "v2.3";
       navigator.vibrate(50);
     }
 
-    if (widget.classList.contains("tc-collapsed")) {
-      expand();
-    } else {
-      collapse();
-    }
+    cycleMode();
   });
 
   // Enhanced observation setup
