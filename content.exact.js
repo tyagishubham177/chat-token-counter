@@ -7,7 +7,7 @@ import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
 
-const VERSION = "v2.3";
+const VERSION = "v2.4";
 
 (async () => {
   // Prevent multiple injections
