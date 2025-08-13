@@ -79,6 +79,51 @@
     inset 0 -1px 2px rgba(0,0,0,0.05);
 }
 
+/* Compact state - dot with token count */
+#tc_widget.tc-compact {
+  height: 48px;
+  min-width: 80px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.12),
+    0 4px 12px rgba(0,0,0,0.08),
+    inset 0 1px 2px rgba(255,255,255,0.8);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+#tc_widget.tc-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px rgba(0,0,0,0.15),
+    0 6px 16px rgba(0,0,0,0.1),
+    inset 0 1px 2px rgba(255,255,255,0.8);
+}
+
+#tc_widget.tc-compact::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--liq, #10b981);
+  box-shadow: 0 0 12px var(--glow, rgba(16,185,129,0.4));
+}
+
+#tc_widget.tc-compact #tc_value {
+  font-size: 16px;
+  margin: 0;
+}
+
+#tc_widget.tc-compact #tc_bottle,
+#tc_widget.tc-compact #tc_ver {
+  display: none;
+}
+
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
   #tc_widget.tc-collapsed {
@@ -101,6 +146,15 @@
       0 8px 24px rgba(0,0,0,0.3),
       inset 0 1px 2px rgba(255,255,255,0.08),
       inset 0 -1px 2px rgba(0,0,0,0.3);
+  }
+  
+  #tc_widget.tc-compact {
+    background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.8));
+    border-color: rgba(148,163,184,0.2);
+    box-shadow: 
+      0 8px 32px rgba(0,0,0,0.4),
+      0 4px 12px rgba(0,0,0,0.3),
+      inset 0 1px 2px rgba(255,255,255,0.1);
   }
 }
 
