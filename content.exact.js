@@ -2,7 +2,7 @@ import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
 
-const VERSION = "v2.5.3";
+const VERSION = "v2.6.0";
 
 (async () => {
   // Prevent multiple injections
@@ -81,6 +81,16 @@ const VERSION = "v2.5.3";
 
   document.documentElement.appendChild(widget);
 
+  // Create scroll map overlay to visualize user messages along the scrollbar
+  const scrollMap = document.createElement("div");
+  scrollMap.id = "tc_scrollmap";
+  scrollMap.setAttribute("aria-hidden", "true");
+  scrollMap.innerHTML = "<div class='tc-scroll-track'><div class='tc-scroll-thumb'></div><div class='tc-scroll-markers'></div></div>";
+  document.documentElement.appendChild(scrollMap);
+
+  const scrollMarkers = scrollMap.querySelector(".tc-scroll-markers");
+  const scrollThumb = scrollMap.querySelector(".tc-scroll-thumb");
+
   // Get DOM elements
   const elValue = widget.querySelector("#tc_value");
   const elLiquid = widget.querySelector("#tc_liquid");
@@ -121,6 +131,405 @@ const VERSION = "v2.5.3";
     return budget; // Keep current budget if no match
   };
 
+  // Scroll map state and helpers
+  let userMessageElements = [];
+  let scrollContainer = null;
+  let scrollListenerTarget = null;
+  let conversationRoot = null;
+  let scrollMapRaf = 0;
+  let resizeRaf = 0;
+
+  const isDocumentScrollContainer = (element) => {
+    if (!element) return true;
+    return (
+      element === document.body ||
+      element === document.documentElement ||
+      element === document.scrollingElement
+    );
+  };
+
+  const ensureConversationRoot = () => {
+    if (conversationRoot && document.contains(conversationRoot)) {
+      return conversationRoot;
+    }
+
+    const candidates = [
+      document.querySelector("main section"),
+      document.querySelector("main"),
+      document.querySelector("[data-testid*='conversation']"),
+      document.querySelector("#__next main"),
+    ].filter(Boolean);
+
+    conversationRoot =
+      candidates.find((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }) || document.body;
+
+    return conversationRoot;
+  };
+
+  const ensureScrollContainer = () => {
+    if (scrollContainer && document.contains(scrollContainer)) {
+      return scrollContainer;
+    }
+
+    const root = ensureConversationRoot();
+    let current = root;
+    while (current && current !== document.body) {
+      const style = window.getComputedStyle(current);
+      if (
+        (style.overflowY === "auto" ||
+          style.overflowY === "scroll" ||
+          style.overflowY === "overlay") &&
+        current.scrollHeight > current.clientHeight + 64
+      ) {
+        scrollContainer = current;
+        break;
+      }
+      current = current.parentElement;
+    }
+
+    if (!scrollContainer) {
+      scrollContainer =
+        document.scrollingElement ||
+        document.documentElement ||
+        document.body;
+    }
+
+    return scrollContainer;
+  };
+
+  const getViewportHeight = (container) =>
+    isDocumentScrollContainer(container)
+      ? window.innerHeight ||
+        document.documentElement.clientHeight ||
+        document.body.clientHeight ||
+        0
+      : container.clientHeight || 0;
+
+  const getScrollTop = (container) =>
+    isDocumentScrollContainer(container)
+      ? window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      : container.scrollTop || 0;
+
+  const setScrollTop = (container, top, smooth = true) => {
+    const target = Math.max(0, top);
+    const behavior = smooth ? { top: target, behavior: "smooth" } : { top: target };
+    if (isDocumentScrollContainer(container)) {
+      window.scrollTo(behavior);
+    } else {
+      container.scrollTo(behavior);
+    }
+  };
+
+  const getNodeOffsetWithinContainer = (node, container) => {
+    if (!node || !container) return 0;
+    const rect = node.getBoundingClientRect();
+    if (isDocumentScrollContainer(container)) {
+      return (
+        rect.top +
+        (window.scrollY ||
+          document.documentElement.scrollTop ||
+          document.body.scrollTop ||
+          0)
+      );
+    }
+    const containerRect = container.getBoundingClientRect();
+    return rect.top - containerRect.top + container.scrollTop;
+  };
+
+  const clearScrollMap = () => {
+    scrollMap.classList.remove("tc-scrollmap-visible");
+    scrollMarkers.innerHTML = "";
+    scrollThumb.style.opacity = "0";
+  };
+
+  const updateScrollMapLayout = () => {
+    const root = ensureConversationRoot();
+    if (!root) {
+      clearScrollMap();
+      return false;
+    }
+
+    const rect = root.getBoundingClientRect();
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight || 0;
+
+    if (!viewportHeight || rect.height <= 0) {
+      clearScrollMap();
+      return false;
+    }
+
+    const safeTop = Math.max(16, Math.min(rect.top, viewportHeight - 120));
+    const safeBottom = Math.min(
+      viewportHeight - 16,
+      Math.max(rect.bottom, safeTop + 120)
+    );
+    const height = Math.max(120, safeBottom - safeTop);
+
+    scrollMap.style.top = `${Math.round(safeTop)}px`;
+    scrollMap.style.height = `${Math.round(height)}px`;
+    scrollMap.classList.add("tc-scrollmap-visible");
+
+    return true;
+  };
+
+  const updateScrollThumb = (containerParam) => {
+    const container = containerParam || ensureScrollContainer();
+    if (!container) {
+      scrollThumb.style.opacity = "0";
+      return;
+    }
+
+    const trackHeight = scrollMap.getBoundingClientRect().height;
+    const scrollHeight = container.scrollHeight || 0;
+    const viewportHeight = getViewportHeight(container);
+
+    if (!trackHeight || !scrollHeight || !viewportHeight) {
+      scrollThumb.style.opacity = "0";
+      return;
+    }
+
+    const maxScrollable = Math.max(1, scrollHeight - viewportHeight);
+    const viewRatio = Math.min(1, viewportHeight / scrollHeight);
+    const thumbHeight = Math.max(24, trackHeight * viewRatio);
+    const scrollTop = getScrollTop(container);
+    const scrollRatio =
+      maxScrollable <= 0 ? 0 : Math.min(1, scrollTop / maxScrollable);
+    const travelRange = Math.max(0, trackHeight - thumbHeight);
+    const thumbTop = travelRange * scrollRatio;
+
+    scrollThumb.style.height = `${Math.round(thumbHeight)}px`;
+    scrollThumb.style.transform = `translateY(${Math.round(thumbTop)}px)`;
+    scrollThumb.style.opacity = viewRatio >= 0.999 ? "0" : "1";
+  };
+
+  const updateActiveMarker = (containerParam) => {
+    if (!userMessageElements.length) return;
+
+    const container = containerParam || ensureScrollContainer();
+    if (!container) return;
+
+    const viewportHeight = getViewportHeight(container);
+    const scrollTop = getScrollTop(container);
+    const viewportBottom = scrollTop + viewportHeight;
+
+    let activeIndex = -1;
+    for (let index = 0; index < userMessageElements.length; index += 1) {
+      const message = userMessageElements[index];
+      if (!message.isConnected) continue;
+      const rect = message.getBoundingClientRect();
+      const messageHeight = Math.max(rect.height || 0, message.offsetHeight || 0);
+      const messageTop = getNodeOffsetWithinContainer(message, container);
+      const messageBottom = messageTop + messageHeight;
+      if (messageBottom >= scrollTop && messageTop <= viewportBottom) {
+        activeIndex = index;
+        break;
+      }
+    }
+
+    const markers = scrollMarkers.querySelectorAll(".tc-scroll-marker");
+    markers.forEach((marker, index) => {
+      marker.classList.toggle("tc-active", index === activeIndex);
+    });
+  };
+
+  const handleScroll = () => {
+    const container =
+      (scrollContainer && document.contains(scrollContainer)
+        ? scrollContainer
+        : null) || ensureScrollContainer();
+    updateScrollThumb(container);
+    updateActiveMarker(container);
+  };
+
+  const ensureScrollListener = (container) => {
+    const target = isDocumentScrollContainer(container) ? window : container;
+    if (scrollListenerTarget === target) return;
+
+    if (scrollListenerTarget) {
+      scrollListenerTarget.removeEventListener("scroll", handleScroll);
+    }
+
+    target.addEventListener("scroll", handleScroll, { passive: true });
+    scrollListenerTarget = target;
+  };
+
+  const renderScrollMarkers = (container) => {
+    if (!userMessageElements.length) {
+      clearScrollMap();
+      return;
+    }
+
+    if (!updateScrollMapLayout()) {
+      return;
+    }
+
+    ensureScrollListener(container);
+
+    const trackHeight = scrollMap.getBoundingClientRect().height;
+    const scrollHeight = container.scrollHeight || 0;
+    const viewportHeight = getViewportHeight(container);
+
+    if (!trackHeight || !scrollHeight || !viewportHeight) {
+      clearScrollMap();
+      return;
+    }
+
+    const maxScrollable = Math.max(1, scrollHeight - viewportHeight);
+    scrollMarkers.innerHTML = "";
+
+    userMessageElements.forEach((node, index) => {
+      if (!node.isConnected || node.offsetHeight === 0) return;
+
+      const offset = getNodeOffsetWithinContainer(node, container);
+      const normalized =
+        maxScrollable <= 0
+          ? 0.5
+          : Math.min(1, Math.max(0, offset / maxScrollable));
+
+      const rect = node.getBoundingClientRect();
+      const messageHeight = Math.max(rect.height || 0, node.offsetHeight || 0);
+      const markerHeight = Math.max(
+        6,
+        Math.min(
+          36,
+          (messageHeight / Math.max(scrollHeight, 1)) * trackHeight * 1.25
+        )
+      );
+
+      const marker = document.createElement("button");
+      marker.type = "button";
+      marker.className = "tc-scroll-marker";
+      marker.dataset.index = String(index);
+      marker.setAttribute("aria-label", `Jump to user message ${index + 1}`);
+      marker.title = `User message ${index + 1}`;
+      marker.style.height = `${Math.round(markerHeight)}px`;
+      marker.style.top =
+        maxScrollable <= 0
+          ? `${Math.round((trackHeight - markerHeight) / 2)}px`
+          : `calc(${(normalized * 100).toFixed(3)}% - ${Math.round(
+              markerHeight / 2
+            )}px)`;
+
+      const scrollToMessage = (smooth) => {
+        const containerForScroll = ensureScrollContainer();
+        if (!containerForScroll) return;
+        const targetOffset = getNodeOffsetWithinContainer(
+          node,
+          containerForScroll
+        );
+        const viewport = getViewportHeight(containerForScroll);
+        const latestRect = node.getBoundingClientRect();
+        const latestHeight = Math.max(
+          latestRect.height || 0,
+          node.offsetHeight || 0
+        );
+        const desired =
+          targetOffset - viewport / 2 + Math.min(latestHeight, viewport) / 2;
+        setScrollTop(containerForScroll, desired, smooth);
+      };
+
+      marker.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        scrollToMessage(true);
+      });
+
+      marker.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          scrollToMessage(false);
+        }
+      });
+
+      scrollMarkers.appendChild(marker);
+    });
+
+    updateActiveMarker(container);
+  };
+
+  const scheduleScrollMapRender = () => {
+    cancelAnimationFrame(scrollMapRaf);
+    scrollMapRaf = requestAnimationFrame(() => {
+      const container = ensureScrollContainer();
+      if (!container || !userMessageElements.length) {
+        clearScrollMap();
+        return;
+      }
+      renderScrollMarkers(container);
+      updateScrollThumb(container);
+      updateActiveMarker(container);
+    });
+  };
+
+  const handleResize = () => {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      scheduleScrollMapRender();
+    });
+  };
+
+  const extractUserMessages = (nodes) => {
+    if (!nodes || !nodes.length) return [];
+
+    const seen = new Set();
+    const result = [];
+
+    nodes.forEach((node) => {
+      if (!(node instanceof Element)) return;
+
+      const containerCandidate = node.matches("[data-message-author-role]")
+        ? node
+        : node.closest("[data-message-author-role]");
+
+      const target =
+        containerCandidate ||
+        node.closest("[data-testid*='conversation-turn']") ||
+        node.closest("article[data-testid*='conversation']");
+
+      if (!target || seen.has(target)) return;
+
+      const role = target.getAttribute("data-message-author-role");
+      const testId = target.getAttribute("data-testid") || "";
+
+      if (role && role.toLowerCase() === "user") {
+        if (target.offsetHeight > 0) {
+          seen.add(target);
+          result.push(target);
+        }
+        return;
+      }
+
+      if (!role && /user/i.test(testId) && target.offsetHeight > 0) {
+        seen.add(target);
+        result.push(target);
+      }
+    });
+
+    result.sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top
+    );
+
+    return result;
+  };
+
+  const scheduleScrollMapUpdate = (messageNodes) => {
+    userMessageElements = extractUserMessages(messageNodes);
+    if (!userMessageElements.length) {
+      clearScrollMap();
+      return;
+    }
+    scheduleScrollMapRender();
+  };
+
+  window.addEventListener("resize", handleResize);
+
   // Improved text gathering with better cleaning
   const getAllMessageNodes = () => {
     const selectors = [
@@ -158,8 +567,8 @@ const VERSION = "v2.5.3";
       .trim();
   };
 
-  const getText = () => {
-    const messageNodes = getAllMessageNodes();
+  const getText = (messageNodesOverride) => {
+    const messageNodes = messageNodesOverride || getAllMessageNodes();
     const messageText = messageNodes
       .map((node) => {
         let text = node.innerText || node.textContent || "";
@@ -299,7 +708,10 @@ const VERSION = "v2.5.3";
       console.log(`Token Counter: Budget updated to ${budget.toLocaleString()}`);
     }
 
-    const text = getText();
+    const messageNodes = getAllMessageNodes();
+    scheduleScrollMapUpdate(messageNodes);
+
+    const text = getText(messageNodes);
     const signature = `${budget}:${text.length}:${text.slice(-100)}`;
 
     if (signature === lastSignature) return;
@@ -408,6 +820,19 @@ const VERSION = "v2.5.3";
       cancelAnimationFrame(animationId);
       enc.free();
       document.removeEventListener("input", debouncedUpdate);
+      if (scrollListenerTarget) {
+        scrollListenerTarget.removeEventListener("scroll", handleScroll);
+        scrollListenerTarget = null;
+      }
+      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(scrollMapRaf);
+      cancelAnimationFrame(resizeRaf);
+      userMessageElements = [];
+      scrollContainer = null;
+      conversationRoot = null;
+      if (scrollMap.parentElement) {
+        scrollMap.parentElement.removeChild(scrollMap);
+      }
     } catch (error) {
       console.warn("Token Counter: Cleanup error:", error);
     }
