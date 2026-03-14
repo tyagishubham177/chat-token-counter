@@ -89,7 +89,7 @@ const VERSION = "v2.5.4";
   const elLiquidHighlight = widget.querySelector("#tc_liquid_highlight");
 
   // Budget detection with improved pattern matching
-  let budget = 32000;
+  let budget = 256000;
   const detectBudget = () => {
     const candidates = Array.from(
       document.querySelectorAll(
@@ -114,10 +114,10 @@ const VERSION = "v2.5.4";
 
     // More precise matching
     if (/ChatGPT\s*5\s+Thinking|5\s*Thinking|GPT-?5\s*Thinking/i.test(textContent)) {
-      return 128000;
+      return 256000;
     }
     if (/ChatGPT\s*5(?!\s*Thinking)|GPT-?5(?!\s*Thinking)/i.test(textContent)) {
-      return 32000;
+      return 256000;
     }
 
     return budget; // Keep current budget if no match
