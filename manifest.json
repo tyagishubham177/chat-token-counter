@@ -1,8 +1,16 @@
 {
   "name": "Chat Token Counter (v2.5)",
   "description": "Exact token count on chatgpt.com using tiktoken (local).",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "manifest_version": 3,
+  "action": {
+    "default_title": "Chat Token Counter",
+    "default_popup": "popup.html"
+  },
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*"
+  ],
   "content_scripts": [
     {
       "matches": [

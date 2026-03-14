@@ -2,7 +2,7 @@ import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
 
-const VERSION = "v2.5.3";
+const VERSION = "v2.5.4";
 
 (async () => {
   // Prevent multiple injections
@@ -16,10 +16,12 @@ const VERSION = "v2.5.3";
   // Create the widget with improved SVG design
   const widget = document.createElement("div");
   widget.id = "tc_widget";
-  widget.className = "tc-compact"; // Start in compact mode
+  widget.className = "tc-compact tc-show"; // Start visible in compact mode
   widget.setAttribute("role", "button");
   widget.setAttribute("aria-expanded", "false");
   widget.setAttribute("aria-label", "Token counter");
+  widget.setAttribute("data-state", "ready");
+  widget.title = "Token counter ready. Open a chat or start typing.";
 
   widget.innerHTML = `
     <div id="tc_inner">
@@ -127,6 +129,9 @@ const VERSION = "v2.5.3";
       "[data-message-author-role]",
       "[data-message-id] .prose",
       "[data-message-id] .markdown",
+      "[data-testid^='conversation-turn-']",
+      "[data-testid*='conversation-turn']",
+      "[data-testid='conversation-turn-content']",
       ".message-content",
       ".conversation-turn",
       "article[data-testid*='conversation']",
@@ -151,11 +156,34 @@ const VERSION = "v2.5.3";
   };
 
   const getInputText = () => {
-    const inputs = document.querySelectorAll("textarea, [contenteditable='true']");
-    return Array.from(inputs)
-      .map((input) => input.value || input.textContent || "")
-      .join("\n")
-      .trim();
+    const candidates = Array.from(
+      document.querySelectorAll("textarea, [contenteditable='true']")
+    )
+      .map((input) => {
+        const rawText = input.value || input.textContent || "";
+        const text = rawText.trim();
+        const normalized = text.replace(/\s+/g, " ");
+        const isVisible = input.getClientRects().length > 0;
+        const priority = input.matches("[contenteditable='true']") ? 2 : 1;
+
+        return { text, normalized, isVisible, priority };
+      })
+      .filter((candidate) => candidate.text.length > 0)
+      .sort((a, b) => {
+        if (a.isVisible !== b.isVisible) return Number(b.isVisible) - Number(a.isVisible);
+        return b.priority - a.priority;
+      });
+
+    const uniqueTexts = [];
+    const seen = new Set();
+
+    candidates.forEach((candidate) => {
+      if (seen.has(candidate.normalized)) return;
+      seen.add(candidate.normalized);
+      uniqueTexts.push(candidate.text);
+    });
+
+    return uniqueTexts.join("\n").trim();
   };
 
   const getText = () => {
@@ -319,13 +347,13 @@ const VERSION = "v2.5.3";
         tokenSizeClass = "large";
       }
       widget.setAttribute("data-tokens", tokenSizeClass);
+      widget.setAttribute("data-state", text.trim().length > 0 ? "counting" : "ready");
+      widget.title =
+        text.trim().length > 0
+          ? `${tokenCount.toLocaleString()} tokens counted on this page`
+          : "Token counter ready. Open a chat or start typing.";
 
-      // Show/hide widget based on content
-      if (text.trim().length > 0) {
-        widget.classList.add("tc-show");
-      } else {
-        widget.classList.remove("tc-show");
-      }
+      widget.classList.add("tc-show");
     } catch (error) {
       console.error("Token Counter: Encoding error:", error);
     }

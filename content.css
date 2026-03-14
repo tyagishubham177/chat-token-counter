@@ -10,6 +10,14 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+#tc_widget[data-state="ready"] {
+  opacity: 0.78;
+}
+
+#tc_widget[data-state="ready"] #tc_value {
+  opacity: 0.82;
+}
+
 /* Collapsed state - elegant floating dot */
 #tc_widget.tc-collapsed {
   width: 48px;
