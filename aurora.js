@@ -26,9 +26,10 @@ function isUpgrade(node) {
 }
 
 function isLimitNotice(node) {
-  if (node.closest("[data-message-author-role]")) return false;
+  if (node.closest("[data-message-author-role], [data-chatgpt-search-unit-key]")) return false;
   const text = node.textContent.trim().replace(/\s+/g, " ");
   return text.length < 600 && /\b(?:GPT[ \-‑]?5(?:\.\d+)?|model)\b/i.test(text) &&
+    !/\bno (?:usage|rate) limit\b/i.test(text) &&
     /\b(?:usage limit|rate limit|limit (?:for|reached)|reached (?:the |your )?limit|hit (?:the |your )?limit|out of (?:messages|responses))\b/i.test(text);
 }
 
@@ -125,7 +126,12 @@ export function startAurora(signal, _history, preferences) {
     }
     const needsObserver = preferences.auroraHideUpgrade || preferences.auroraHideLimit;
     if (needsObserver && !observing) {
-      observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+      observer.observe(document.body, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+        attributeFilter: ["aria-label", "data-testid", "role"],
+      });
     } else if (!needsObserver && observing) {
       observer.disconnect();
       cancelAnimationFrame(frame);

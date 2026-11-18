@@ -100,8 +100,13 @@ html.cwb-aurora-on.cwb-aurora-glass #stage-slideover-sidebar .bg-token-bg-elevat
 
 @media (prefers-reduced-motion: no-preference) {
   html.cwb-aurora-on.cwb-aurora-glass.cwb-aurora-motion
-    .popover[data-radix-menu-content][data-state="open"] {
+    .popover:is([data-radix-menu-content], [role="dialog"])[data-state="open"] {
     animation: cwb-aurora-menu-open 180ms ease-out;
+  }
+
+  html.cwb-aurora-on.cwb-aurora-glass.cwb-aurora-motion
+    .popover:is([data-radix-menu-content], [role="dialog"])[data-state="closed"] {
+    animation: cwb-aurora-menu-open 140ms ease-in reverse;
   }
 }
 
