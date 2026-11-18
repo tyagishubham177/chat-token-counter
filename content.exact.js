@@ -1,16 +1,19 @@
 import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
 import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
+import { version } from "./manifest.json";
+import { getTranscript, readMessages } from "./chatgpt.js";
 
-const VERSION = "v2.5.4";
+const VERSION = `v${version}`;
+let tokenizerReady;
 
-(async () => {
-  // Prevent multiple injections
-  if (window.__TC_INJECTED_EXACT__) return;
-  window.__TC_INJECTED_EXACT__ = true;
-
-  // Initialize tiktoken
-  await init((imports) => WebAssembly.instantiate(wasm, imports));
+export async function startTokenCounter(signal) {
+  tokenizerReady ??= init((imports) => WebAssembly.instantiate(wasm, imports)).catch((error) => {
+    tokenizerReady = undefined;
+    throw error;
+  });
+  await tokenizerReady;
+  if (signal.aborted) return;
   const enc = new Tiktoken(cl100k.bpe_ranks, cl100k.special_tokens, cl100k.pat_str);
 
   // Create the widget with improved SVG design
@@ -18,6 +21,7 @@ const VERSION = "v2.5.4";
   widget.id = "tc_widget";
   widget.className = "tc-compact tc-show"; // Start visible in compact mode
   widget.setAttribute("role", "button");
+  widget.tabIndex = 0;
   widget.setAttribute("aria-expanded", "false");
   widget.setAttribute("aria-label", "Token counter");
   widget.setAttribute("data-state", "ready");
@@ -125,6 +129,10 @@ const VERSION = "v2.5.4";
 
   // Improved text gathering with better cleaning
   const getAllMessageNodes = () => {
+    const transcript = getTranscript();
+    if (transcript?.matches('[data-rail-chat-transcript]')) {
+      return readMessages(transcript).map(({ content }) => content).filter(Boolean);
+    }
     const selectors = [
       "[data-message-author-role]",
       "[data-message-id] .prose",
@@ -160,6 +168,7 @@ const VERSION = "v2.5.4";
       document.querySelectorAll("textarea, [contenteditable='true']")
     )
       .map((input) => {
+        if (input.closest('[data-rail-chat-transcript]')) return null;
         const rawText = input.value || input.textContent || "";
         const text = rawText.trim();
         const normalized = text.replace(/\s+/g, " ");
@@ -168,7 +177,7 @@ const VERSION = "v2.5.4";
 
         return { text, normalized, isVisible, priority };
       })
-      .filter((candidate) => candidate.text.length > 0)
+      .filter((candidate) => candidate?.text.length > 0)
       .sort((a, b) => {
         if (a.isVisible !== b.isVisible) return Number(b.isVisible) - Number(a.isVisible);
         return b.priority - a.priority;
@@ -402,6 +411,12 @@ const VERSION = "v2.5.4";
     cycleMode();
   });
 
+  widget.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    cycleMode();
+  });
+
   // Enhanced observation setup
   const observationRoot = document.querySelector("main") || document.body;
 
@@ -417,53 +432,28 @@ const VERSION = "v2.5.4";
   // Multiple input event listeners for real-time typing
   const inputEvents = ["input", "keyup", "paste", "cut"];
   inputEvents.forEach((eventType) => {
-    document.addEventListener(eventType, immediateUpdate, { passive: true });
+    document.addEventListener(eventType, immediateUpdate, { passive: true, signal });
   });
 
   // Focus events to catch when user starts/stops typing
-  document.addEventListener("focusin", immediateUpdate, { passive: true });
-  document.addEventListener("focusout", debouncedUpdate, { passive: true });
+  document.addEventListener("focusin", immediateUpdate, { passive: true, signal });
+  document.addEventListener("focusout", debouncedUpdate, { passive: true, signal });
 
   // Periodic updates for edge cases (reduced frequency)
   const intervalId = setInterval(performUpdate, 1000); // Reduced from 2000ms
 
-  // Cleanup function
-  const cleanup = () => {
-    try {
-      mutationObserver.disconnect();
-      clearInterval(intervalId);
-      clearTimeout(updateTimeout);
-      cancelAnimationFrame(animationId);
-      enc.free();
-      document.removeEventListener("input", debouncedUpdate);
-    } catch (error) {
-      console.warn("Token Counter: Cleanup error:", error);
-    }
-  };
-
-  // Register cleanup
-  window.addEventListener("beforeunload", cleanup);
-
-  // Also cleanup if the widget is removed
-  const cleanupObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.removedNodes.forEach((node) => {
-        if (node === widget) {
-          cleanup();
-          cleanupObserver.disconnect();
-        }
-      });
-    });
-  });
-
-  cleanupObserver.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-  });
+  signal.addEventListener("abort", () => {
+    mutationObserver.disconnect();
+    clearInterval(intervalId);
+    clearTimeout(updateTimeout);
+    cancelAnimationFrame(animationId);
+    widget.remove();
+    enc.free();
+  }, { once: true });
 
   // Initial update
   performUpdate();
 
   console.log(`Token Counter ${VERSION} loaded successfully`);
   console.log('Debug: Use document.getElementById("tc_widget").debugTokenCount() to check token counting');
-})();
+}

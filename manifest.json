@@ -1,10 +1,10 @@
 {
-  "name": "Chat Token Counter (v2.5)",
-  "description": "Exact token count on chatgpt.com using tiktoken (local).",
-  "version": "2.5.4",
+  "name": "Chat Workbench",
+  "description": "Jump between turns in ChatGPT and count tokens locally.",
+  "version": "2.7.0",
   "manifest_version": 3,
   "action": {
-    "default_title": "Chat Token Counter",
+    "default_title": "Chat Workbench",
     "default_popup": "popup.html"
   },
   "host_permissions": [
@@ -21,10 +21,11 @@
         "build/content.js"
       ],
       "css": [
-        "content.css"
+        "content.css",
+        "anchors.css"
       ],
       "run_at": "document_idle"
     }
   ],
-  "permissions": []
+  "permissions": ["storage"]
 }
