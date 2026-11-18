@@ -65,7 +65,19 @@ h1 {
   cursor: inherit;
 }
 
-.setting input:focus-visible {
+.setting select {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: inherit;
+}
+
+.setting :is(input, select):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }

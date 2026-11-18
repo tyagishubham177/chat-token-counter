@@ -1,459 +1,166 @@
 import { init, Tiktoken } from "@dqbd/tiktoken/lite/init";
 import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm";
-import cl100k from "@dqbd/tiktoken/encoders/cl100k_base.json";
+import o200k from "@dqbd/tiktoken/encoders/o200k_base.json";
 import { version } from "./manifest.json";
-import { getTranscript, readMessages } from "./chatgpt.js";
 
-const VERSION = `v${version}`;
+const composerSelectors = [
+  ':is(textarea, [contenteditable="true"]):is(#prompt-textarea, [data-testid="prompt-textarea"], [data-testid="prompt-text-input"])',
+  ':is(textarea, [contenteditable="true"]):is([aria-label="Ask ChatGPT"], [aria-label="Message ChatGPT"])',
+  ':is([data-testid="composer"], [data-testid="composer-root"], form:has(button[data-testid="send-button"])) :is(textarea, [contenteditable="true"])',
+];
+const excludedComposer = '[hidden], [inert], [aria-hidden="true"], [data-message-author-role], [data-rail-chat-transcript]';
+const modes = ["compact", "expanded", "collapsed"];
+const countFormat = new Intl.NumberFormat();
+const emptyHistory = { turns: [], complete: false, scanning: false };
 let tokenizerReady;
 
-export async function startTokenCounter(signal) {
+function findComposer() {
+  for (const selector of composerSelectors) {
+    const input = [...document.querySelectorAll(selector)].find((node) =>
+      node.getClientRects().length && !node.closest(excludedComposer));
+    if (input) return input;
+  }
+  return null;
+}
+
+export async function startTokenCounter(signal, history) {
   tokenizerReady ??= init((imports) => WebAssembly.instantiate(wasm, imports)).catch((error) => {
     tokenizerReady = undefined;
     throw error;
   });
   await tokenizerReady;
   if (signal.aborted) return;
-  const enc = new Tiktoken(cl100k.bpe_ranks, cl100k.special_tokens, cl100k.pat_str);
 
-  // Create the widget with improved SVG design
-  const widget = document.createElement("div");
+  const encoder = new Tiktoken(o200k.bpe_ranks, o200k.special_tokens, o200k.pat_str);
+  const widget = document.createElement("button");
+  widget.type = "button";
   widget.id = "tc_widget";
-  widget.className = "tc-compact tc-show"; // Start visible in compact mode
-  widget.setAttribute("role", "button");
-  widget.tabIndex = 0;
+  widget.className = "tc-compact tc-show";
   widget.setAttribute("aria-expanded", "false");
-  widget.setAttribute("aria-label", "Token counter");
-  widget.setAttribute("data-state", "ready");
-  widget.title = "Token counter ready. Open a chat or start typing.";
-
   widget.innerHTML = `
-    <div id="tc_inner">
-      <div id="tc_main">
-        <div id="tc_bottle" aria-hidden="true">
-          <svg viewBox="0 0 48 160" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <!-- Improved glass gradient -->
-              <linearGradient id="tc_gloss_grad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="rgba(255,255,255,0.8)"/>
-                <stop offset="30%" stop-color="rgba(255,255,255,0.4)"/>
-                <stop offset="70%" stop-color="rgba(255,255,255,0.2)"/>
-                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-              </linearGradient>
-              
-              <!-- Bottle shadow gradient -->
-              <linearGradient id="tc_shadow_grad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="rgba(0,0,0,0.1)"/>
-                <stop offset="50%" stop-color="rgba(0,0,0,0.05)"/>
-                <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
-              </linearGradient>
-              
-              <!-- Liquid clip path - properly fitted to bottle -->
-              <clipPath id="tc_clip">
-                <path d="M16 22 L32 22 L34 24 L34 140 Q34 150 24 150 Q14 150 14 140 L14 24 Z"/>
-              </clipPath>
-            </defs>
-            
-            <!-- Bottle shadow -->
-            <path d="M17 8 L31 8 L31 20 L33 22 L35 24 L35 140 Q35 152 24 152 Q13 152 13 140 L13 24 L15 22 L17 20 Z"
-                  fill="url(#tc_shadow_grad)" opacity="0.3"/>
-            
-            <!-- Bottle outline -->
-            <path d="M16 6 L32 6 L32 20 L34 22 L34 140 Q34 150 24 150 Q14 150 14 140 L14 22 L16 20 Z"
-                  fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity="0.4"/>
-            
-            <!-- Bottle neck detail -->
-            <rect x="20" y="6" width="8" height="14" rx="1" 
-                  fill="none" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.3"/>
-            
-            <!-- Liquid fill (animated) -->
-            <rect id="tc_liquid" x="14" y="150" width="20" height="0"
-                  clip-path="url(#tc_clip)" rx="2"/>
-            
-            <!-- Inner liquid highlight -->
-            <rect id="tc_liquid_highlight" x="16" y="150" width="4" height="0"
-                  clip-path="url(#tc_clip)" rx="1" fill="rgba(255,255,255,0.4)"/>
-            
-            <!-- Glass highlight -->
-            <path id="tc_gloss" d="M16 24 L20 24 L20 140 L16 140 Z" 
-                  fill="url(#tc_gloss_grad)" clip-path="url(#tc_clip)"/>
-          </svg>
-        </div>
-        <div id="tc_value">0</div>
-      </div>
-      <div id="tc_ver">${VERSION}</div>
-    </div>
-  `;
+    <span id="tc_inner">
+      <span id="tc_bottle" aria-hidden="true">
+        <svg viewBox="0 0 44 88" fill="none">
+          <path d="M15 5h14v12l7 9v49a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V26l7-9V5Z" stroke="currentColor" stroke-width="2" opacity=".55"/>
+          <path d="M15 13h14M15 30v37" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".28"/>
+          <circle cx="24" cy="55" r="5" fill="var(--liq)"/>
+        </svg>
+      </span>
+      <span id="tc_value">0</span>
+      <span id="tc_scope"></span>
+      <span id="tc_ver">v${version}</span>
+    </span>`;
+  document.documentElement.append(widget);
 
-  document.documentElement.appendChild(widget);
+  const valueElement = widget.querySelector("#tc_value");
+  const scopeElement = widget.querySelector("#tc_scope");
+  const cache = new Map();
+  let composer;
+  let draftText;
+  let draftCount = 0;
+  let conversationCount = 0;
+  let coverage = "draft";
+  let mode = 0;
+  let frame;
+  let failed = false;
 
-  // Get DOM elements
-  const elValue = widget.querySelector("#tc_value");
-  const elLiquid = widget.querySelector("#tc_liquid");
-  const elLiquidHighlight = widget.querySelector("#tc_liquid_highlight");
+  // User-visible text may contain strings that the tokenizer reserves as control markers.
+  const countTokens = (text) => text ? encoder.encode(text, [], []).length : 0;
 
-  // Budget detection with improved pattern matching
-  let budget = 256000;
-  const detectBudget = () => {
-    const candidates = Array.from(
-      document.querySelectorAll(
-        [
-          "header",
-          "nav",
-          '[data-testid*="model"]',
-          '[class*="model"]',
-          '[aria-label*="Model"]',
-          '[aria-label*="model"]',
-          "[data-model]",
-          ".model-selector",
-          'button[role="combobox"]',
-          '[role="menuitem"]',
-        ].join(", ")
-      )
-    );
-
-    const textContent = candidates
-      .map((el) => (el.textContent || el.getAttribute("aria-label") || "").trim())
-      .join(" | ");
-
-    // More precise matching
-    if (/ChatGPT\s*5\s+Thinking|5\s*Thinking|GPT-?5\s*Thinking/i.test(textContent)) {
-      return 256000;
+  function render() {
+    const total = conversationCount + draftCount;
+    const exactDisplay = countFormat.format(total);
+    const compactDisplay = total >= 10000 ? `${(total / 1000).toFixed(1)}k` : exactDisplay;
+    const scope = {
+      complete: "Indexed chat + draft",
+      partial: "Partial chat + draft",
+      scanning: "Indexing chat",
+      draft: "Draft only",
+    }[coverage];
+    const description = failed ? "Token estimate unavailable" : `${exactDisplay} estimated text tokens · ${scope}`;
+    const display = failed ? "—" : mode === 0 ? compactDisplay : exactDisplay;
+    if (valueElement.textContent !== display) valueElement.textContent = display;
+    if (scopeElement.textContent !== (failed ? "Estimate unavailable" : scope)) {
+      scopeElement.textContent = failed ? "Estimate unavailable" : scope;
     }
-    if (/ChatGPT\s*5(?!\s*Thinking)|GPT-?5(?!\s*Thinking)/i.test(textContent)) {
-      return 256000;
-    }
+    widget.dataset.coverage = failed ? "unavailable" : coverage;
+    widget.dataset.state = !failed && (total || coverage !== "draft") ? "counting" : "ready";
+    widget.title = description;
+    widget.setAttribute("aria-label", `Token counter. ${description}`);
+  }
 
-    return budget; // Keep current budget if no match
-  };
-
-  // Improved text gathering with better cleaning
-  const getAllMessageNodes = () => {
-    const transcript = getTranscript();
-    if (transcript?.matches('[data-rail-chat-transcript]')) {
-      return readMessages(transcript).map(({ content }) => content).filter(Boolean);
-    }
-    const selectors = [
-      "[data-message-author-role]",
-      "[data-message-id] .prose",
-      "[data-message-id] .markdown",
-      "[data-testid^='conversation-turn-']",
-      "[data-testid*='conversation-turn']",
-      "[data-testid='conversation-turn-content']",
-      ".message-content",
-      ".conversation-turn",
-      "article[data-testid*='conversation']",
-      ".text-message",
-      ".markdown.prose",
-    ];
-
-    const nodes = new Set();
-    selectors.forEach((selector) => {
-      document.querySelectorAll(selector).forEach((node) => {
-        // Skip hidden or empty nodes
-        if (node.offsetHeight === 0 || !node.textContent?.trim()) return;
-        // Skip if it's inside another already selected node
-        const isNested = Array.from(nodes).some(
-          (existing) => existing.contains(node) || node.contains(existing)
-        );
-        if (!isNested) nodes.add(node);
-      });
-    });
-
-    return Array.from(nodes);
-  };
-
-  const getInputText = () => {
-    const candidates = Array.from(
-      document.querySelectorAll("textarea, [contenteditable='true']")
-    )
-      .map((input) => {
-        if (input.closest('[data-rail-chat-transcript]')) return null;
-        const rawText = input.value || input.textContent || "";
-        const text = rawText.trim();
-        const normalized = text.replace(/\s+/g, " ");
-        const isVisible = input.getClientRects().length > 0;
-        const priority = input.matches("[contenteditable='true']") ? 2 : 1;
-
-        return { text, normalized, isVisible, priority };
-      })
-      .filter((candidate) => candidate?.text.length > 0)
-      .sort((a, b) => {
-        if (a.isVisible !== b.isVisible) return Number(b.isVisible) - Number(a.isVisible);
-        return b.priority - a.priority;
-      });
-
-    const uniqueTexts = [];
-    const seen = new Set();
-
-    candidates.forEach((candidate) => {
-      if (seen.has(candidate.normalized)) return;
-      seen.add(candidate.normalized);
-      uniqueTexts.push(candidate.text);
-    });
-
-    return uniqueTexts.join("\n").trim();
-  };
-
-  const getText = () => {
-    const messageNodes = getAllMessageNodes();
-    const messageText = messageNodes
-      .map((node) => {
-        let text = node.innerText || node.textContent || "";
-        // Clean up common artifacts
-        text = text
-          .replace(/\n{3,}/g, "\n\n") // Multiple newlines to double
-          .replace(/\s+/g, " ") // Multiple spaces to single
-          .replace(/^\s*Copy code\s*/gm, "") // Remove "Copy code" buttons
-          .replace(/^\s*\d+\s*$/gm, "") // Remove standalone numbers (line numbers)
-          .trim();
-        return text;
-      })
-      .filter((text) => text.length > 5) // Filter out very short fragments
-      .join("\n\n");
-
-    const inputText = getInputText();
-
-    const fullText = [messageText, inputText].filter(Boolean).join("\n\n");
-
-    // Final cleanup
-    return fullText.replace(/\n{3,}/g, "\n\n").trim();
-  };
-
-  // Enhanced bottle animation
-  const updateBottle = (tokens) => {
-    const percentage = Math.max(0, Math.min(1, tokens / budget));
-
-    // Bottle dimensions: top=24, bottom=150, height=126
-    const liquidTop = 24;
-    const liquidBottom = 150;
-    const maxHeight = liquidBottom - liquidTop;
-
-    const fillHeight = Math.round(maxHeight * percentage);
-    const yPosition = liquidBottom - fillHeight;
-
-    // Smooth height animation
-    elLiquid.style.y = `${yPosition}px`;
-    elLiquid.style.height = `${Math.max(0, fillHeight)}px`;
-
-    // Synchronized highlight animation
-    elLiquidHighlight.style.y = `${yPosition}px`;
-    elLiquidHighlight.style.height = `${Math.max(0, fillHeight)}px`;
-
-    // Color state management
-    widget.classList.remove("tc-mid", "tc-high", "tc-danger");
-
-    if (percentage >= 0.95) {
-      widget.classList.add("tc-danger");
-    } else if (percentage >= 0.75) {
-      widget.classList.add("tc-high");
-    } else if (percentage >= 0.2) {
-      widget.classList.add("tc-mid");
-    }
-    // Default green for < 20%
-  };
-
-  // Smooth number animation with faster easing for immediate updates
-  let animationId = 0;
-  let currentDisplayValue = 0;
-
-  // Format token display based on mode
-  const formatTokenDisplay = (value) => {
-    if (widget.classList.contains("tc-compact") && value >= 10000) {
-      const roundedOneDecimalK = Math.round((value / 1000) * 10) / 10;
-      return `${roundedOneDecimalK.toFixed(1)}k`;
-    }
-    return value.toLocaleString();
-  };
-
-  const animateValueTo = (targetValue, immediate = false) => {
-    const startValue = currentDisplayValue;
-    const difference = targetValue - startValue;
-
-    // If change is small or immediate update requested, skip animation
-    if (Math.abs(difference) <= 2 || immediate) {
-      elValue.textContent = formatTokenDisplay(targetValue);
-      currentDisplayValue = targetValue;
-      return;
-    }
-
-    const duration = Math.min(300, Math.abs(difference) * 2); // Adaptive duration
-    const startTime = performance.now();
-
-    cancelAnimationFrame(animationId);
-
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Cubic ease-out for smooth deceleration
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      const currentValue = Math.round(startValue + difference * easedProgress);
-
-      elValue.textContent = formatTokenDisplay(currentValue);
-
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
-      } else {
-        currentDisplayValue = targetValue;
-      }
-    };
-
-    animationId = requestAnimationFrame(animate);
-  };
-
-  // Debug function to check token counting accuracy
-  const debugTokenCount = () => {
-    const text = getText();
-    const tokenCount = enc.encode(text).length;
-    const charCount = text.length;
-    const wordCount = text.split(/\s+/).filter((w) => w.length > 0).length;
-
-    console.group("Token Counter Debug");
-    console.log("Text length (chars):", charCount);
-    console.log("Word count:", wordCount);
-    console.log("Token count:", tokenCount);
-    console.log("Tokens per word (avg):", (tokenCount / Math.max(wordCount, 1)).toFixed(2));
-    console.log("Budget:", budget.toLocaleString());
-    console.log("Usage:", ((tokenCount / budget) * 100).toFixed(1) + "%");
-    console.log("Text preview:", text.slice(0, 200) + (text.length > 200 ? "..." : ""));
-    console.groupEnd();
-
-    return { text, tokenCount, charCount, wordCount };
-  };
-
-  // Add debug method to widget for manual testing
-  widget.debugTokenCount = debugTokenCount;
-
-  // Main update function with debouncing
-  let lastSignature = "";
-  let updateTimeout = null;
-
-  const performUpdate = () => {
-    const newBudget = detectBudget();
-    if (newBudget !== budget) {
-      budget = newBudget;
-      console.log(`Token Counter: Budget updated to ${budget.toLocaleString()}`);
-    }
-
-    const text = getText();
-    const signature = `${budget}:${text.length}:${text.slice(-100)}`;
-
-    if (signature === lastSignature) return;
-    lastSignature = signature;
-
+  function update(includeHistory = false) {
     try {
-      const tokenCount = enc.encode(text).length;
-      const isSmallChange = Math.abs(tokenCount - currentDisplayValue) <= 5;
-      animateValueTo(tokenCount, isSmallChange);
-      updateBottle(tokenCount);
-
-      // Update token count size class
-      let tokenSizeClass = "small";
-      if (tokenCount >= 100000) {
-        tokenSizeClass = "xlarge";
-      } else if (tokenCount >= 1000) {
-        tokenSizeClass = "large";
+      if (includeHistory || failed) {
+        const { turns, complete, scanning } = history?.getSnapshot() || emptyHistory;
+        const currentIds = new Set();
+        let total = 0;
+        for (const { id, promptText, replyText } of turns) {
+          if (currentIds.has(id)) continue;
+          currentIds.add(id);
+          let saved = cache.get(id);
+          if (!saved || saved.promptText !== promptText || saved.replyText !== replyText) {
+            const count = countTokens(promptText) + countTokens(replyText);
+            saved = { promptText, replyText, count };
+            cache.set(id, saved);
+          }
+          total += saved.count;
+        }
+        for (const id of cache.keys()) {
+          if (!currentIds.has(id)) cache.delete(id);
+        }
+        conversationCount = total;
+        coverage = scanning ? "scanning" : complete ? "complete" : turns.length ? "partial" : "draft";
       }
-      widget.setAttribute("data-tokens", tokenSizeClass);
-      widget.setAttribute("data-state", text.trim().length > 0 ? "counting" : "ready");
-      widget.title =
-        text.trim().length > 0
-          ? `${tokenCount.toLocaleString()} tokens counted on this page`
-          : "Token counter ready. Open a chat or start typing.";
 
-      widget.classList.add("tc-show");
-    } catch (error) {
-      console.error("Token Counter: Encoding error:", error);
+      composer = findComposer();
+      const text = composer?.value ?? (composer?.textContent ? composer.innerText : "");
+      if (text !== draftText) {
+        draftCount = countTokens(text);
+        draftText = text;
+      }
+      failed = false;
+    } catch {
+      if (!failed) console.warn("Chat Workbench could not estimate the token count.");
+      failed = true;
     }
+    render();
+  }
+
+  const onInput = (event) => {
+    if (!composer?.isConnected) composer = findComposer();
+    if (composer?.contains(event.target)) update();
   };
-
-  const debouncedUpdate = () => {
-    clearTimeout(updateTimeout);
-    updateTimeout = setTimeout(performUpdate, 50); // Reduced from 100ms
+  const scheduleDraft = () => {
+    if (frame !== undefined) return;
+    frame = requestAnimationFrame(() => {
+      frame = undefined;
+      update();
+    });
   };
-
-  // Immediate update for input events
-  const immediateUpdate = () => {
-    clearTimeout(updateTimeout);
-    performUpdate();
-  };
-
-  // Toggle functionality with improved UX for three modes
-  const cycleMode = () => {
-    if (widget.classList.contains("tc-collapsed")) {
-      // Collapsed -> Compact
-      widget.classList.remove("tc-collapsed");
-      widget.classList.add("tc-compact");
-      widget.setAttribute("aria-expanded", "false");
-    } else if (widget.classList.contains("tc-compact")) {
-      // Compact -> Expanded
-      widget.classList.remove("tc-compact");
-      widget.classList.add("tc-expanded");
-      widget.setAttribute("aria-expanded", "true");
-    } else {
-      // Expanded -> Collapsed
-      widget.classList.remove("tc-expanded");
-      widget.classList.add("tc-collapsed");
-      widget.setAttribute("aria-expanded", "false");
-    }
-  };
-
-  // Click handler with haptic feedback (if supported)
-  widget.addEventListener("click", (e) => {
-    e.stopPropagation();
-
-    // Provide haptic feedback on mobile devices
-    if ("vibrate" in navigator) {
-      navigator.vibrate(50);
-    }
-
-    cycleMode();
+  const observer = new MutationObserver((records) => {
+    if (!composer?.isConnected || records.some(({ target }) =>
+      composer.contains(target) || (target instanceof Element && target.contains(composer)))) scheduleDraft();
   });
+  observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+  document.addEventListener("input", onInput, { passive: true, signal });
+  window.navigation?.addEventListener("currententrychange", scheduleDraft, { signal });
+  const unsubscribe = history?.subscribe(() => update(true));
 
-  widget.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    cycleMode();
+  widget.addEventListener("click", () => {
+    widget.classList.remove(`tc-${modes[mode]}`);
+    mode = (mode + 1) % modes.length;
+    widget.classList.add(`tc-${modes[mode]}`);
+    widget.setAttribute("aria-expanded", String(mode === 1));
+    render();
   });
-
-  // Enhanced observation setup
-  const observationRoot = document.querySelector("main") || document.body;
-
-  // MutationObserver for DOM changes
-  const mutationObserver = new MutationObserver(debouncedUpdate);
-  mutationObserver.observe(observationRoot, {
-    subtree: true,
-    childList: true,
-    characterData: true,
-    attributes: false, // Reduce noise
-  });
-
-  // Multiple input event listeners for real-time typing
-  const inputEvents = ["input", "keyup", "paste", "cut"];
-  inputEvents.forEach((eventType) => {
-    document.addEventListener(eventType, immediateUpdate, { passive: true, signal });
-  });
-
-  // Focus events to catch when user starts/stops typing
-  document.addEventListener("focusin", immediateUpdate, { passive: true, signal });
-  document.addEventListener("focusout", debouncedUpdate, { passive: true, signal });
-
-  // Periodic updates for edge cases (reduced frequency)
-  const intervalId = setInterval(performUpdate, 1000); // Reduced from 2000ms
 
   signal.addEventListener("abort", () => {
-    mutationObserver.disconnect();
-    clearInterval(intervalId);
-    clearTimeout(updateTimeout);
-    cancelAnimationFrame(animationId);
+    observer.disconnect();
+    unsubscribe?.();
+    cancelAnimationFrame(frame);
     widget.remove();
-    enc.free();
+    encoder.free();
   }, { once: true });
-
-  // Initial update
-  performUpdate();
-
-  console.log(`Token Counter ${VERSION} loaded successfully`);
-  console.log('Debug: Use document.getElementById("tc_widget").debugTokenCount() to check token counting');
+  update(true);
 }

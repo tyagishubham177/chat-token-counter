@@ -1,7 +1,7 @@
 {
   "name": "Chat Workbench",
   "description": "Jump between turns in ChatGPT and count tokens locally.",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "manifest_version": 3,
   "action": {
     "default_title": "Chat Workbench",

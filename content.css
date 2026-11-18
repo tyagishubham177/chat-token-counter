@@ -1,400 +1,108 @@
-/* Token Counter - Modern Glass Design */
 #tc_widget {
+  --tc-surface: linear-gradient(135deg, rgb(255 255 255 / 94%), rgb(245 248 252 / 83%));
+  --tc-border: rgb(255 255 255 / 70%);
+  --tc-ink: #1f2937;
+  --tc-shadow: 0 8px 28px rgb(0 0 0 / 14%), inset 0 1px 2px rgb(255 255 255 / 80%);
+  --liq: #088257;
   position: fixed;
   right: 16px;
   bottom: 16px;
   z-index: 999999;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  user-select: none;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#tc_widget[data-state="ready"] {
-  opacity: 0.78;
-}
-
-#tc_widget[data-state="ready"] #tc_value {
-  opacity: 0.82;
-}
-
-/* Collapsed state - elegant floating dot */
-#tc_widget.tc-collapsed {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
+  appearance: none;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-#tc_widget.tc-collapsed:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.15),
-    0 6px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8);
-}
-
-/* Collapsed state dot indicator */
-#tc_widget.tc-collapsed::after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--liq, #10b981);
-  box-shadow: 0 0 12px var(--glow, rgba(16, 185, 129, 0.4));
-  animation: tcPulseIndicator 2s ease-in-out infinite;
-}
-
-@keyframes tcPulseIndicator {
-
-  0%,
-  100% {
-    opacity: 0.8;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-}
-
-/* Expanded state - sleek vertical panel */
-#tc_widget.tc-expanded {
-  width: auto;
-  min-width: 100px;
-  height: 280px;
+  border: 1px solid var(--tc-border);
   border-radius: 24px;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.85) 0%,
-      rgba(255, 255, 255, 0.75) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    0 8px 24px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.9),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(16px);
-  overflow: hidden;
-}
-
-#tc_widget.tc-expanded:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 24px 68px rgba(0, 0, 0, 0.18),
-    0 10px 28px rgba(0, 0, 0, 0.1),
-    inset 0 1px 2px rgba(255, 255, 255, 0.9),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Compact state - dot with token count */
-#tc_widget.tc-compact {
-  height: 48px;
-  min-width: 64px;
-  max-width: 96px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  background: var(--tc-surface);
+  box-shadow: var(--tc-shadow);
   backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  padding: 0;
-  padding-right: 8px;
+  color: var(--tc-ink);
+  font: 14px/1.2 system-ui, sans-serif;
+  cursor: pointer;
+  user-select: none;
 }
 
-#tc_widget.tc-compact:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.15),
-    0 6px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8);
+:is(html.dark, html[data-theme="dark"], html:has(body.dark)) #tc_widget {
+  --tc-surface: linear-gradient(135deg, rgb(30 41 59 / 94%), rgb(15 23 42 / 85%));
+  --tc-border: rgb(148 163 184 / 28%);
+  --tc-ink: #f8fafc;
+  --tc-shadow: 0 8px 28px rgb(0 0 0 / 38%), inset 0 1px 2px rgb(255 255 255 / 8%);
+  --liq: #41cea0;
 }
 
-#tc_widget.tc-compact::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--liq, #10b981);
-  box-shadow: 0 0 12px var(--glow, rgba(16, 185, 129, 0.4));
-  margin: 0 8px;
-  flex-shrink: 0;
+#tc_widget[data-coverage="partial"], #tc_widget[data-coverage="unavailable"] { --liq: #87939f; }
+#tc_widget[data-coverage="scanning"] { --liq: #b07a31; }
+
+#tc_widget:focus-visible {
+  outline: 2px solid #6b9cf4;
+  outline-offset: 3px;
 }
 
-#tc_widget.tc-compact #tc_value {
-  font-size: 16px;
-  margin: 0;
-  transition: font-size 0.3s ease;
-  line-height: 48px;
+#tc_widget.tc-compact {
+  width: 88px;
   height: 48px;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-#tc_widget.tc-compact #tc_main {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  margin: 0;
-  padding: 0;
-  gap: 0;
-}
-
-/* Compact mode content adjustments */
-#tc_widget.tc-compact #tc_bottle {
-  display: none;
-}
-
-#tc_widget.tc-compact #tc_inner {
+  gap: 6px;
   padding: 0 8px;
 }
 
-#tc_widget.tc-compact #tc_ver {
-  display: none;
-}
-
-#tc_widget.tc-compact[data-tokens="large"] #tc_value {
-  font-size: 13px;
-}
-
-#tc_widget.tc-compact[data-tokens="xlarge"] #tc_value {
-  font-size: 12px;
-}
-
-/* Dark mode styles */
-@media (prefers-color-scheme: dark) {
-  #tc_widget.tc-collapsed {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.8));
-    border-color: rgba(148, 163, 184, 0.2);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      0 4px 12px rgba(0, 0, 0, 0.3),
-      inset 0 1px 2px rgba(255, 255, 255, 0.1);
-  }
-
-  #tc_widget.tc-expanded {
-    background: linear-gradient(135deg,
-        rgba(30, 41, 59, 0.85) 0%,
-        rgba(15, 23, 42, 0.8) 100%);
-    border-color: rgba(148, 163, 184, 0.15);
-    color: #e2e8f0;
-    box-shadow:
-      0 20px 60px rgba(0, 0, 0, 0.5),
-      0 8px 24px rgba(0, 0, 0, 0.3),
-      inset 0 1px 2px rgba(255, 255, 255, 0.08),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.3);
-  }
-
-  #tc_widget.tc-compact {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.8));
-    border-color: rgba(148, 163, 184, 0.2);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      0 4px 12px rgba(0, 0, 0, 0.3),
-      inset 0 1px 2px rgba(255, 255, 255, 0.1);
-  }
-}
-
-/* Inner content layout */
-#tc_inner {
-  display: none;
-  padding: 16px;
-  height: 100%;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-#tc_widget.tc-expanded #tc_inner,
-#tc_widget.tc-compact #tc_inner {
-  display: flex;
-}
-
-#tc_main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-
-/* Bottle container */
-#tc_bottle {
+#tc_widget.tc-collapsed {
   width: 48px;
-  height: 160px;
-  position: relative;
-  filter: drop-shadow(0 0 16px var(--glow, rgba(16, 185, 129, 0.3)));
-  transition: filter 0.4s ease;
+  height: 48px;
 }
 
-#tc_bottle svg {
-  width: 100%;
-  height: 100%;
+#tc_widget.tc-compact::before,
+#tc_widget.tc-collapsed::before {
+  content: "";
+  flex: 0 0 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--liq);
+}
+
+#tc_widget.tc-expanded {
+  width: 148px;
+  min-height: 208px;
+  padding: 14px 10px;
+}
+
+#tc_inner, #tc_value, #tc_scope, #tc_ver { display: block; }
+
+#tc_bottle {
   display: block;
+  width: 44px;
+  height: 88px;
+  margin: 0 auto 8px;
 }
 
-/* Token count display */
+#tc_bottle svg { display: block; width: 100%; height: 100%; }
+
 #tc_value {
   font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  text-align: center;
-  line-height: 1.2;
-  color: #1f2937;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  #tc_value {
-    color: #f8fafc;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  }
+#tc_scope {
+  margin-top: 5px;
+  font-size: 11px;
 }
 
-/* Version info */
 #tc_ver {
+  margin-top: 14px;
   font-size: 10px;
-  opacity: 0.6;
-  text-align: center;
-  font-weight: 500;
-  letter-spacing: 0.025em;
+  opacity: 0.72;
 }
 
-/* Visibility control */
-#tc_widget:not(.tc-show) {
+#tc_widget.tc-compact #tc_value { font-size: 14px; }
+
+#tc_widget.tc-compact :is(#tc_bottle, #tc_scope, #tc_ver),
+#tc_widget.tc-collapsed #tc_inner {
   display: none;
 }
 
-/* Color scheme variables */
-#tc_widget {
-  --liq: #10b981;
-  --glow: rgba(16, 185, 129, 0.3);
-  --liq-secondary: rgba(16, 185, 129, 0.1);
-}
-
-#tc_widget.tc-mid {
-  --liq: #f59e0b;
-  --glow: rgba(245, 158, 11, 0.3);
-  --liq-secondary: rgba(245, 158, 11, 0.1);
-}
-
-#tc_widget.tc-high {
-  --liq: #ef4444;
-  --glow: rgba(239, 68, 68, 0.3);
-  --liq-secondary: rgba(239, 68, 68, 0.1);
-}
-
-#tc_widget.tc-danger {
-  --liq: #dc2626;
-  --glow: rgba(220, 38, 38, 0.4);
-  --liq-secondary: rgba(220, 38, 38, 0.15);
-}
-
-/* Liquid fill animation */
-#tc_liquid {
-  fill: var(--liq);
-  transition: y 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-    fill 0.3s ease;
-}
-
-/* Danger state pulse animation */
-#tc_widget.tc-danger #tc_liquid {
-  animation: tcDangerPulse 1.5s ease-in-out infinite;
-}
-
-#tc_widget.tc-danger #tc_bottle {
-  animation: tcBottleShake 2s ease-in-out infinite;
-}
-
-@keyframes tcDangerPulse {
-
-  0%,
-  100% {
-    opacity: 0.9;
-    filter: brightness(1);
-  }
-
-  50% {
-    opacity: 1;
-    filter: brightness(1.2);
-  }
-}
-
-@keyframes tcBottleShake {
-
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-0.5px);
-  }
-
-  75% {
-    transform: translateX(0.5px);
-  }
-}
-
-/* Glass highlight effect */
-#tc_gloss {
-  fill: url(#tc_gloss_grad);
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-/* Bottle outline improvements */
-#tc_bottle path {
-  stroke: currentColor;
-  stroke-opacity: 0.3;
-  stroke-width: 1.5;
-  fill: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  #tc_bottle path {
-    stroke-opacity: 0.4;
-  }
-}
-
-/* Responsive adjustments */
 @media (max-width: 768px) {
-  #tc_widget {
-    right: 12px;
-    bottom: 12px;
-  }
-
-  #tc_widget.tc-expanded {
-    width: auto;
-    min-width: 90px;
-    height: 240px;
-  }
-
-  #tc_bottle {
-    width: 40px;
-    height: 140px;
-  }
-
-  #tc_value {
-    font-size: 16px;
-  }
+  #tc_widget { right: 12px; bottom: 12px; }
 }

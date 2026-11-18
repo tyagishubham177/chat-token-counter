@@ -10,7 +10,7 @@
   z-index: 10060;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 4px;
   width: max-content;
   font: 13px/1.4 system-ui, sans-serif;
@@ -42,23 +42,33 @@
 }
 
 #cwb-anchors .cwb-launcher {
-  min-height: 30px;
-  border: 1px solid var(--cwb-border);
-  border-radius: 7px;
-  background: var(--cwb-surface);
-  padding: 3px 8px;
-  font-size: 12px;
-  font-weight: 600;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+#cwb-anchors .cwb-launcher span {
+  box-sizing: border-box;
+  width: 8px;
+  height: 10px;
+  border: 1px solid var(--cwb-accent);
+  border-radius: 5px 5px 3px 3px;
+  background: radial-gradient(circle at center 3px, var(--cwb-accent) 1px, transparent 1.5px);
 }
 
 #cwb-anchors .cwb-rail { display: grid; }
 
 #cwb-anchors .cwb-rail button {
-  display: flex;
-  align-items: center;
-  width: 38px;
-  height: 24px;
-  padding: 0 5px;
+  position: relative;
+  width: 24px;
+  height: 13px;
+  padding: 0;
   background: transparent;
   border: 0;
   border-radius: 5px;
@@ -66,27 +76,28 @@
 
 #cwb-anchors .cwb-rail button::before {
   content: "";
-  width: 11px;
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  width: 8px;
   height: 2px;
+  pointer-events: none;
   border-radius: 2px;
   background: var(--cwb-tick);
   transition: width 120ms ease, background-color 120ms ease;
 }
 
-#cwb-anchors .cwb-rail button.cwb-group::before {
-  width: 16px;
-  height: 4px;
-  background: transparent;
-  border-block: 1px solid var(--cwb-tick);
-  border-radius: 0;
+#cwb-anchors[data-side="right"] .cwb-rail button::before {
+  left: auto;
+  right: 8px;
 }
 
-#cwb-anchors .cwb-rail button:is(:hover, :focus-visible)::before { width: 19px; }
+#cwb-anchors .cwb-rail button:is(:has(+ button + button:is(:hover, :focus-visible)), :is(:hover, :focus-visible) + button + button)::before { width: 12px; }
+#cwb-anchors .cwb-rail button:is(:has(+ button:is(:hover, :focus-visible)), :is(:hover, :focus-visible) + button)::before { width: 17px; }
+#cwb-anchors .cwb-rail button:is(:hover, :focus-visible)::before { width: 24px; }
 
 #cwb-anchors .cwb-rail button[aria-current]::before {
-  width: 27px;
   background: var(--cwb-accent);
-  border-color: var(--cwb-accent);
 }
 
 #cwb-anchor-preview,
@@ -138,6 +149,7 @@
 }
 
 #cwb-anchor-list h2 { margin: 0; font: 650 14px/1.3 system-ui, sans-serif; }
+#cwb-anchor-list [role="status"] { margin: 0; padding: 12px 14px; color: var(--cwb-muted); }
 
 #cwb-anchor-list header button {
   width: 32px;
@@ -174,6 +186,7 @@
 #cwb-anchor-list button:hover, #cwb-anchors .cwb-launcher:hover { background: var(--cwb-hover); }
 
 .cwb-jump-target { outline: 2px solid #598feb !important; outline-offset: 3px; }
+.cwb-indexing { opacity: 0 !important; pointer-events: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   #cwb-anchors .cwb-rail button::before { transition: none; }

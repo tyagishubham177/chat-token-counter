@@ -1,5 +1,5 @@
-const modernMessage = '[data-chatgpt-search-unit-key$=":user"], [data-chatgpt-search-unit-key$=":assistant"]';
-const classicMessage = '[data-message-author-role="user"], [data-message-author-role="assistant"]';
+const modernMessage = '[data-chatgpt-search-unit-key]';
+const classicMessage = '[data-message-author-role]';
 
 export function getTranscript() {
   const transcripts = [...document.querySelectorAll('[data-rail-chat-transcript="true"]')];
@@ -42,6 +42,7 @@ export function readMessages(transcript) {
   for (const node of nodes) {
     if (node.parentElement.closest(selector) || node.closest('[hidden], [inert], [aria-hidden="true"]')) continue;
     const role = node.dataset.messageAuthorRole || node.dataset.chatgptSearchUnitKey?.split(":").at(-1);
+    if (role !== "user" && role !== "assistant") continue;
     const content = role === "user"
       ? node.querySelector('[data-user-message-bubble], .whitespace-pre-wrap') || node
       : node.querySelector('[data-markdown-text-style], .markdown, .prose') || (modern.length ? null : node);
@@ -50,19 +51,39 @@ export function readMessages(transcript) {
   return messages;
 }
 
+const nodeKeys = new WeakMap();
+let nextNodeKey = 0;
+
+function messageKey(node) {
+  const id = node.dataset.chatgptSearchMessageIds || node.dataset.messageId ||
+    node.closest('[data-turn-key]')?.dataset.turnKey || node.dataset.chatgptSearchUnitKey;
+  if (id) return id;
+  if (!nodeKeys.has(node)) nodeKeys.set(node, `node:${++nextNodeKey}`);
+  return nodeKeys.get(node);
+}
+
+function messageText(node) {
+  return (node?.innerText || node?.textContent || "").trim();
+}
+
 export function readExchanges(transcript) {
   const exchanges = [];
   for (const message of readMessages(transcript)) {
     if (message.role === "user") {
-      exchanges.push({ node: message.node, prompt: message.content, replies: [] });
+      exchanges.push({ id: messageKey(message.node), node: message.node, prompt: message.content,
+        promptText: messageText(message.content), replyText: "" });
     } else if (message.content && exchanges.length) {
-      exchanges.at(-1).replies.push(message.content);
+      const reply = messageText(message.content);
+      if (reply) {
+        const turn = exchanges.at(-1);
+        turn.replyText = turn.replyText ? `${turn.replyText}\n\n${reply}` : reply;
+      }
     }
   }
   return exchanges;
 }
 
-export function excerpt(node, limit) {
-  const text = (node?.innerText || node?.textContent || "").replace(/\s+/g, " ").trim();
+export function excerpt(value, limit) {
+  const text = value.replace(/\s+/g, " ").trim();
   return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
 }
