@@ -57,6 +57,6 @@ export function readExchanges(transcript) {
 }
 
 export function excerpt(node, limit) {
-  const text = node?.textContent?.replace(/\s+/g, " ").trim() || "";
+  const text = (node?.innerText || node?.textContent || "").replace(/\s+/g, " ").trim();
   return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
 }
