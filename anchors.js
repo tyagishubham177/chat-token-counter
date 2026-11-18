@@ -39,6 +39,7 @@ export function startAnchors(signal) {
   let previewTimer;
   let refreshTimer;
   let scrollFrame;
+  let jumpFrame;
 
   const label = (index) => excerpt(turns[index]?.prompt, 140) || "Attachment";
   const paneBounds = () => scroller === document.scrollingElement
@@ -121,7 +122,7 @@ export function startAnchors(signal) {
     list.replaceChildren();
   }
 
-  function animateJump(index, fromList) {
+  function jumpToTurn(index, fromList) {
     const turn = turns[index];
     if (!turn?.node.isConnected || location.pathname !== route) {
       scheduleRefresh();
@@ -129,9 +130,18 @@ export function startAnchors(signal) {
     }
     closePreview();
     if (fromList) closeList(true);
-    const top = scroller.scrollTop + turn.node.getBoundingClientRect().top - readingLine();
-    const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
-    scroller.scrollTo({ top, behavior });
+    const targetPane = scroller;
+    const targetRoute = route;
+    const align = () => {
+      const top = targetPane.scrollTop + turn.node.getBoundingClientRect().top - readingLine();
+      targetPane.scrollTo({ top, behavior: "instant" });
+    };
+    align();
+    cancelAnimationFrame(jumpFrame);
+    // ChatGPT can resize nearby turns as they come into view.
+    jumpFrame = requestAnimationFrame(() => {
+      if (targetPane === scroller && targetRoute === location.pathname && turn.node.isConnected) align();
+    });
     highlight?.classList.remove("cwb-jump-target");
     clearTimeout(highlightTimer);
     highlight = turn.prompt;
@@ -147,7 +157,7 @@ export function startAnchors(signal) {
         const item = document.createElement("li");
         button = document.createElement("button");
         button.type = "button";
-        button.addEventListener("click", () => animateJump(index, true));
+        button.addEventListener("click", () => jumpToTurn(index, true));
         item.append(button);
         list.append(item);
       }
@@ -196,7 +206,7 @@ export function startAnchors(signal) {
           button.className = "cwb-group";
           button.title = `Turns ${first + 1}–${last + 1}`;
         }
-        button.addEventListener("click", () => first === last ? animateJump(first, false) : openList(first, button));
+        button.addEventListener("click", () => first === last ? jumpToTurn(first, false) : openList(first, button));
         button.addEventListener("pointerenter", () => showPreview(marker));
         button.addEventListener("pointerleave", dismissPreviewSoon);
         button.addEventListener("focus", () => showPreview(marker));
@@ -292,6 +302,7 @@ export function startAnchors(signal) {
     clearTimeout(refreshTimer);
     clearTimeout(highlightTimer);
     cancelAnimationFrame(scrollFrame);
+    cancelAnimationFrame(jumpFrame);
     closePreview();
     highlight?.classList.remove("cwb-jump-target");
     root.remove();

@@ -2,7 +2,7 @@
 
 A Chrome extension for navigating conversations and counting tokens on `chatgpt.com` and `chat.openai.com`.
 
-- **Chat anchors** adds a rail beside the transcript. Hover or focus a tick to preview a prompt and its reply, then activate the tick to jump. Open **Anchors** to choose a turn from a list, including in narrow windows and when multiple turns share a tick.
+- **Chat anchors** adds a rail beside the transcript. Hover or focus a tick to preview a prompt and its reply, then activate the tick to jump. Open **Anchors** to choose a turn from a list, including in narrow windows and when multiple turns share a tick. In long conversations, the rail reflects the turns ChatGPT has currently loaded in the page.
 - **Token counter** counts the conversation and current draft locally with `tiktoken`. Click the widget to cycle through compact, expanded, and collapsed views.
 - The Chrome toolbar popup lets you enable each tool independently. Chrome stores the preferences on your device.
 

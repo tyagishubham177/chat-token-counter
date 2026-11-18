@@ -2,15 +2,21 @@ const modernMessage = '[data-chatgpt-search-unit-key$=":user"], [data-chatgpt-se
 const classicMessage = '[data-message-author-role="user"], [data-message-author-role="assistant"]';
 
 export function getTranscript() {
-  const transcript = document.querySelector('[data-rail-chat-transcript="true"]');
+  const transcripts = [...document.querySelectorAll('[data-rail-chat-transcript="true"]')];
+  if (!transcripts.length) return document.querySelector("main");
+  const visible = transcripts.filter((node) => node.getClientRects().length > 0 &&
+    !node.closest('[hidden], [inert], [aria-hidden="true"]'));
   const conversationId = location.pathname.match(/\/c\/([^/]+)\/?$/)?.[1];
-  const renderedId = transcript?.getAttribute("data-chatgpt-conversation-selection-target");
-  // New chats can retain a local transcript ID after the URL switches to its final ID.
-  if (renderedId && conversationId && !renderedId.startsWith("local-chatgpt:") &&
-      encodeURIComponent(renderedId) !== conversationId && renderedId !== conversationId) {
-    return null;
-  }
-  return transcript || document.querySelector("main");
+  if (!conversationId) return visible[0] || null;
+
+  const renderedId = (node) => node.getAttribute("data-chatgpt-conversation-selection-target");
+  // ChatGPT can retain the previous transcript in the DOM after an in-app navigation.
+  const exact = visible.find((node) => renderedId(node) === conversationId ||
+    encodeURIComponent(renderedId(node)) === conversationId);
+  if (exact) return exact;
+
+  // A new chat can keep its local transcript ID after the URL switches to its final ID.
+  return visible.find((node) => renderedId(node)?.startsWith("local-chatgpt:")) || null;
 }
 
 export function findScrollContainer(node) {
