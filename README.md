@@ -19,7 +19,7 @@ Open `chrome://extensions` and turn on **Developer mode**. Choose **Load unpacke
 
 ## Verify in Chrome
 
-1. On `chrome://extensions`, check that the extension card reads **Chat Workbench** and `2.7.1`.
+1. On `chrome://extensions`, check that the extension card reads **Chat Workbench** and `2.7.2`.
 2. Open a ChatGPT conversation with several turns. Hover or focus a tick and confirm that the preview matches the turn. Click the tick or press Enter and confirm that the page jumps to that prompt.
 3. Open the pin in a long chat and confirm the list includes the earliest and latest prompts. Check that the conversation returns to your reading position after indexing. Choose an offscreen turn. Repeat in a narrow window and after switching chats.
 4. Type in the composer and confirm the token estimate updates. Scroll after the chat is fully indexed and confirm the estimate stays stable. Click the widget to cycle its three views.

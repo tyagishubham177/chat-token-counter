@@ -257,11 +257,11 @@ export function startAnchors(signal, history, preferences) {
     const height = Math.min(innerHeight, bounds.bottom) - top;
     const right = rightSide();
     const gutter = right ? bounds.right - column.right : column.left - bounds.left;
-    const paneEdge = right ? bounds.right - 24 : bounds.left;
-    const columnEdge = right ? column.right + 12 : column.left - 36;
-    const x = gutter >= 38 ? columnEdge : paneEdge;
+    const railWidth = 24;
+    const inset = Math.max(4, Math.min(48, (gutter - railWidth) / 2));
+    const x = right ? bounds.right - railWidth - inset : bounds.left + inset;
     root.dataset.side = preferences.anchorSide;
-    root.style.left = `${Math.max(4, Math.min(x, innerWidth - 28))}px`;
+    root.style.left = `${Math.max(4, Math.min(x, innerWidth - railWidth - 4))}px`;
     root.style.top = `${Math.max(8, Math.round(top + height * 0.35))}px`;
     const capacity = state.turns.length > 1 && height >= 172 ? Math.min(36, Math.floor((height * 0.62 - 30) / 13)) : 0;
     renderRail(capacity);
