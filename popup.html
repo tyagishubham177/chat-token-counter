@@ -3,23 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat Token Counter</title>
+    <title>Chat Workbench</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="popup">
-      <p class="eyebrow">ChatGPT Chrome Extension</p>
-      <h1>Chat Token Counter</h1>
-      <p class="lede">
-        This extension runs automatically on <strong>chatgpt.com</strong> and
-        shows a floating token counter in the bottom-right corner.
-      </p>
-      <ul class="steps">
-        <li>Open ChatGPT and start typing, or open an existing conversation.</li>
-        <li>Click the floating widget to cycle compact, expanded, and collapsed views.</li>
-        <li>After code changes, reload the extension in <code>chrome://extensions</code> and refresh ChatGPT.</li>
-      </ul>
-      <p class="footer">Supported sites: <code>chatgpt.com</code>, <code>chat.openai.com</code></p>
+      <h1>Chat Workbench</h1>
+      <div class="settings">
+        <label class="setting" for="anchorsEnabled">
+          <span class="setting-copy">
+            <span class="setting-name">Chat anchors</span>
+            <span class="setting-description" id="anchors-description">Preview and jump between turns.</span>
+          </span>
+          <input type="checkbox" id="anchorsEnabled" aria-label="Chat anchors" aria-describedby="anchors-description" disabled />
+        </label>
+        <label class="setting" for="anchorSide">
+          <span class="setting-copy setting-name">Rail side</span>
+          <select id="anchorSide" disabled>
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+          </select>
+        </label>
+        <label class="setting" for="counterEnabled">
+          <span class="setting-copy">
+            <span class="setting-name">Token counter</span>
+            <span class="setting-description" id="counter-description">Count conversation and draft tokens locally.</span>
+          </span>
+          <input type="checkbox" id="counterEnabled" aria-label="Token counter" aria-describedby="counter-description" disabled />
+        </label>
+      </div>
+      <p class="status" id="settings-status" role="status"></p>
     </main>
+    <script type="module" src="popup.js"></script>
   </body>
 </html>
