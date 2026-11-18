@@ -1,7 +1,7 @@
 {
   "name": "Chat Workbench",
-  "description": "Jump between turns in ChatGPT and count tokens locally.",
-  "version": "2.7.3",
+  "description": "Navigate ChatGPT conversations, count tokens locally, and customize the page with Aurora.",
+  "version": "2.8.0",
   "manifest_version": 3,
   "icons": {
     "16": "icons/jump-brackets-16.png",
@@ -34,7 +34,8 @@
       ],
       "css": [
         "content.css",
-        "anchors.css"
+        "anchors.css",
+        "aurora.css"
       ],
       "run_at": "document_idle"
     }
