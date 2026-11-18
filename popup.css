@@ -92,3 +92,64 @@ h1 {
 .status:not(:empty) {
   margin-top: 10px;
 }
+
+.appearance {
+  margin-top: 9px;
+}
+
+.appearance summary {
+  padding: 8px 2px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.appearance[open] summary {
+  border-bottom: 1px solid var(--divider);
+}
+
+.wallpaper {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.wallpaper-form {
+  display: grid;
+  gap: 6px;
+  margin: 10px 2px 0;
+  font-size: 12px;
+}
+
+.wallpaper-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wallpaper :is(input, button) {
+  min-width: 0;
+  color: var(--text);
+  font: inherit;
+}
+
+.wallpaper :is(input[type="url"], button),
+.wallpaper ::file-selector-button {
+  padding: 5px 8px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--background);
+}
+
+.wallpaper input[type="url"] {
+  flex: 1;
+}
+
+.wallpaper button {
+  color: var(--accent);
+  cursor: pointer;
+}

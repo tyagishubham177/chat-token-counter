@@ -1,0 +1,115 @@
+/* Ambient wallpaper and glass styling adapted from Aurora for ChatGPT. See LICENSE-AURORA. */
+html.cwb-aurora-on {
+  --cwb-glow-base: #f4f3fa;
+  --cwb-glow-wash: rgb(249 248 252 / 79%);
+  --cwb-glow-glass: rgb(255 255 255 / 64%);
+  --cwb-glow-stroke: rgb(39 34 74 / 16%);
+  --cwb-glow-a: #91baf4;
+  --cwb-glow-b: #cba5f4;
+  --cwb-glow-c: #95dce7;
+  background: var(--cwb-glow-base) !important;
+}
+
+html.cwb-aurora-on.dark {
+  --cwb-glow-base: #202024;
+  --cwb-glow-wash: rgb(22 19 33 / 71%);
+  --cwb-glow-glass: rgb(28 25 38 / 70%);
+  --cwb-glow-stroke: rgb(255 255 255 / 16%);
+  --cwb-glow-a: #254591;
+  --cwb-glow-b: #512b83;
+  --cwb-glow-c: #156271;
+}
+
+html.cwb-aurora-on[data-cwb-aurora-theme="light"] {
+  --cwb-glow-a: #91baf4;
+  --cwb-glow-b: #cba5f4;
+  --cwb-glow-c: #95dce7;
+}
+
+html.cwb-aurora-on[data-cwb-aurora-theme="dark"] {
+  --cwb-glow-a: #254591;
+  --cwb-glow-b: #512b83;
+  --cwb-glow-c: #156271;
+}
+
+html.cwb-aurora-on body {
+  isolation: isolate;
+  background: transparent !important;
+}
+
+#cwb-aurora-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 24% 18%, var(--cwb-glow-a), transparent 65%),
+    radial-gradient(ellipse at 81% 28%, var(--cwb-glow-b), transparent 63%),
+    radial-gradient(ellipse at 46% 100%, var(--cwb-glow-c), transparent 64%),
+    var(--cwb-glow-base);
+}
+
+#cwb-aurora-background[data-preset="blue"] {
+  background:
+    radial-gradient(ellipse at 58% 23%, var(--cwb-glow-a), transparent 62%),
+    radial-gradient(ellipse at 18% 86%, var(--cwb-glow-c), transparent 57%),
+    var(--cwb-glow-base);
+}
+
+#cwb-aurora-background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.13);
+  filter: blur(42px);
+}
+
+#cwb-aurora-background::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(transparent, var(--cwb-glow-wash));
+}
+
+#cwb-aurora-background:has(img:not([hidden]))::after {
+  background: var(--cwb-glow-wash);
+}
+
+html.cwb-aurora-on :is(#__next, #root, main, header#page-header, #thread-bottom-container) {
+  background-color: transparent !important;
+}
+
+html.cwb-aurora-on #thread-bottom-container :is(.content-fade, .bg-token-bg-primary.sticky) {
+  background: transparent !important;
+}
+
+html.cwb-aurora-on.cwb-aurora-glass :is(
+  form[data-type="unified-composer"] > div:is(.bg-token-bg-primary, [class*="dark:bg"]),
+  #stage-slideover-sidebar,
+  .popover[data-radix-menu-content]
+) {
+  background: var(--cwb-glow-glass) !important;
+  box-shadow: inset 0 0 0 1px var(--cwb-glow-stroke);
+  backdrop-filter: blur(16px) saturate(135%);
+}
+
+html.cwb-aurora-on.cwb-aurora-glass #stage-slideover-sidebar .bg-token-bg-elevated-secondary {
+  background-color: transparent !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.cwb-aurora-on.cwb-aurora-glass.cwb-aurora-motion
+    .popover[data-radix-menu-content][data-state="open"] {
+    animation: cwb-aurora-menu-open 180ms ease-out;
+  }
+}
+
+@keyframes cwb-aurora-menu-open {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cwb-aurora-hidden {
+  display: none !important;
+}

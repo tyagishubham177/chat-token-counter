@@ -31,8 +31,76 @@
           </span>
           <input type="checkbox" id="counterEnabled" aria-label="Token counter" aria-describedby="counter-description" disabled />
         </label>
+        <label class="setting" for="auroraEnabled">
+          <span class="setting-copy">
+            <span class="setting-name">Aurora</span>
+            <span class="setting-description">Ambient wallpaper and glass styling.</span>
+          </span>
+          <input type="checkbox" id="auroraEnabled" disabled />
+        </label>
       </div>
       <p class="status" id="settings-status" role="status"></p>
+      <details class="appearance">
+        <summary>Aurora settings</summary>
+        <label class="setting" for="auroraShowInChats">
+          <span class="setting-copy setting-name">Show wallpaper in chats</span>
+          <input type="checkbox" id="auroraShowInChats" disabled />
+        </label>
+        <label class="setting" for="auroraTheme">
+          <span class="setting-copy setting-name">Glow theme</span>
+          <select id="auroraTheme" disabled>
+            <option value="auto">Auto</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <fieldset class="wallpaper" id="wallpaper-controls" aria-label="Wallpaper" disabled>
+          <label class="setting" for="auroraPreset">
+            <span class="setting-copy setting-name">Wallpaper</span>
+            <select id="auroraPreset">
+              <option value="aurora">Aurora</option>
+              <option value="blue">Blue</option>
+              <option value="url" disabled>Image URL</option>
+              <option value="upload" disabled>Local image</option>
+            </select>
+          </label>
+          <form id="wallpaper-url-form" class="wallpaper-form">
+            <label for="wallpaper-url">Custom image URL</label>
+            <div class="wallpaper-row">
+              <input type="url" id="wallpaper-url" placeholder="https://…" required />
+              <button type="submit">Apply</button>
+            </div>
+          </form>
+          <div class="wallpaper-form">
+            <label for="wallpaper-file">Upload an image</label>
+            <input type="file" id="wallpaper-file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" aria-describedby="wallpaper-file-help" />
+            <div class="wallpaper-row">
+              <span class="setting-description" id="wallpaper-file-help">Up to 4 MB, stored on this device.</span>
+              <button id="reset-wallpaper" type="button">Reset</button>
+            </div>
+          </div>
+          <p class="status" id="wallpaper-status" role="status"></p>
+        </fieldset>
+        <label class="setting" for="auroraStandardStyle">
+          <span class="setting-copy setting-name">Use standard ChatGPT styling</span>
+          <input type="checkbox" id="auroraStandardStyle" disabled />
+        </label>
+        <label class="setting" for="auroraDisableAnimations">
+          <span class="setting-copy setting-name">Skip Aurora menu animations</span>
+          <input type="checkbox" id="auroraDisableAnimations" disabled />
+        </label>
+        <label class="setting" for="auroraHideUpgrade">
+          <span class="setting-copy setting-name">Hide upgrade buttons</span>
+          <input type="checkbox" id="auroraHideUpgrade" disabled />
+        </label>
+        <label class="setting" for="auroraHideLimit">
+          <span class="setting-copy">
+            <span class="setting-name">Hide model limit notices</span>
+            <span class="setting-description">Leave each notice visible for five minutes.</span>
+          </span>
+          <input type="checkbox" id="auroraHideLimit" disabled />
+        </label>
+      </details>
     </main>
     <script type="module" src="popup.js"></script>
   </body>
