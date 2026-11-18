@@ -1,11 +1,23 @@
 {
   "name": "Chat Workbench",
   "description": "Jump between turns in ChatGPT and count tokens locally.",
-  "version": "2.7.2",
+  "version": "2.7.3",
   "manifest_version": 3,
+  "icons": {
+    "16": "icons/jump-brackets-16.png",
+    "32": "icons/jump-brackets-32.png",
+    "48": "icons/jump-brackets-48.png",
+    "128": "icons/jump-brackets-128.png"
+  },
   "action": {
     "default_title": "Chat Workbench",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/jump-brackets-16.png",
+      "24": "icons/jump-brackets-24.png",
+      "32": "icons/jump-brackets-32.png",
+      "48": "icons/jump-brackets-48.png"
+    }
   },
   "host_permissions": [
     "https://chatgpt.com/*",
